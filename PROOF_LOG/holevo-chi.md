@@ -90,19 +90,59 @@ Four private helpers were added (PhysLib has the first as an explicit TODO):
 
 Good upstream candidates for PhysLib's `ForMathlib/Matrix.lean`.
 
-## Next concrete tasks (recorded for the next session)
+## ✅ `holevoChi_nonneg` proved via Klein's inequality (2026-05-08)
 
-1. **Joint entropy decomposition**: `Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ (ρᵢ)`. This is the substantial next entropy step. Standard proof uses block-diagonality of the cq-state's `M`: its eigenvalues are `pᵢ · spectrum(ρᵢ)` (across `i`), so
-   `Sᵥₙ(cqState e) = -∑ᵢ ∑_λ pᵢ λ log(pᵢ λ) = -∑ᵢ pᵢ log pᵢ - ∑ᵢ pᵢ ∑_λ λ log λ = Hₛ(e.distr) + ∑ᵢ pᵢ Sᵥₙ(ρᵢ)`.
-   Will need PhysLib's `MState.spectrum` API and possibly a pinching argument to relate the cq-state's spectrum to the components'. Not yet started.
+The blocker on χ ≥ 0 has been resolved. Rather than going through the
+literal joint-entropy decomposition `Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ (ρᵢ)`,
+we proved the same conclusion (concavity of `Sᵥₙ`) directly via **Klein's
+inequality** applied componentwise. The chain:
 
-2. From #1 plus the marginal-entropy corollaries already proved:
-   `qMutualInfo (cqState e) = χ e` (the bridge identity), and immediately
-   `holevoChi_nonneg : 0 ≤ χ e` via `Sᵥₙ_subadditivity` (PhysLib `SSA.lean:1203`).
+  Sᵥₙ ρᵢ ≤ −⟪ρᵢ.M, (mix e).M.log⟫            (Klein, support condition)
+⇒ pᵢ Sᵥₙ ρᵢ ≤ −pᵢ ⟪ρᵢ.M, (mix e).M.log⟫    (× pᵢ ≥ 0)
+⇒ ∑ᵢ pᵢ Sᵥₙ ρᵢ ≤ ∑ᵢ −⟪pᵢ • ρᵢ.M, (mix e).M.log⟫
+                = −⟪∑ᵢ pᵢ • ρᵢ.M, (mix e).M.log⟫    (linearity of inner)
+                = −⟪(mix e).M, (mix e).M.log⟫       (mix_M_eq_sum)
+                = Sᵥₙ (mix e)                       (Sᵥₙ_eq_neg_trace_log + comm)
 
-3. The Holevo bound `I_acc(X; ρ) ≤ χ(e)` via DPI on `cqState` plus a measurement channel `id_X ⊗ Λ`.
+`AI4BB84/Information/HolevoNonneg.lean` (added 2026-05-08) supplies:
 
-None of these are required to start on the BB84 protocol model itself, which proceeds independently.
+```lean
+theorem holevoChi_nonneg (e : MEnsemble d α)
+    (h_pos : ∀ i, 0 < (e.distr i : ℝ)) :
+    0 ≤ holevoChi e
+```
+
+Plus four supporting lemmas (all `private`):
+* `mix_M_eq_sum` — HermitianMat-level mixture decomposition
+* `smul_states_le_mix` — `pᵢ • ρᵢ.M ≤ (mix e).M` (PSD order)
+* `mix_ker_le_states_ker` — kernel-containment when `pᵢ > 0`
+* `klein_real` — Klein's inequality reformulated as a real-valued bound
+* `inner_finset_sum_left` — Finset linearity of `HermitianMat.inner`
+
+All proofs go through `propext`, `Classical.choice`, `Quot.sound` only
+(no `sorryAx`, no `sorry`).
+
+## Caveats
+
+* `holevoChi_nonneg` is conditioned on `∀ i, 0 < (e.distr i : ℝ)`. For
+  BB84 with uniform Bool index distribution this is automatic (`1/2 > 0`).
+  Removing this hypothesis would require handling the support-condition
+  edge case at zero-probability indices — bounded follow-up work.
+* The literal joint-entropy decomposition `Sᵥₙ (cqState e) = Hₛ + Σᵢ pᵢ Sᵥₙ ρᵢ`
+  remains unproved. It is no longer the critical path for the security
+  theorem; pursue only if the equality is needed for some downstream
+  cleanup or an alternative Holevo-bound proof.
+
+## Still pending downstream
+
+* **The Holevo bound** `I_acc(X; ρ) ≤ χ(e)`: needed for `keyRate_nonneg`
+  to bridge from `0 ≤ aliceBobMutualInfo` and `0 ≤ eveHolevoInfo` (both
+  proved as corollaries) to `eveHolevoInfo ≤ aliceBobMutualInfo`. The
+  standard proof goes via DPI on `cqState` plus a measurement channel
+  `id_X ⊗ Λ`. PhysLib has DPI for sandwiched Renyi at α=1
+  (= quantum relative entropy) — but `qMutualInfo_as_qRelativeEnt` is
+  `sorry` in PhysLib (TODO upstream), so the existing PhysLib API can't
+  yet hand us DPI for `qMutualInfo` as a one-liner.
 
 ## References
 

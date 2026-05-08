@@ -1,5 +1,6 @@
 import AI4BB84.Adversary.Collective
 import AI4BB84.Information.Holevo
+import AI4BB84.Information.HolevoNonneg
 import AI4BB84.Protocol.Measure
 
 /-!
@@ -68,9 +69,28 @@ rate against any collective attack with that basis. -/
 noncomputable def keyRate (atk : CollectiveAttack E) (a : Basis) : ℝ :=
   aliceBobMutualInfo atk a - eveHolevoInfo atk a
 
+/-! ### Information-theoretic positivity facts (immediate from `holevoChi_nonneg`) -/
+
+/-- Helper: the uniform distribution on `Bool` is positive at every index. -/
+private theorem uniform_bool_pos (b : Bool) :
+    (0 : ℝ) < ((ProbDistribution.uniform : ProbDistribution Bool) b : ℝ) := by
+  show (0 : ℝ) < (ProbDistribution.uniform b).val
+  simp only [ProbDistribution.uniform]
+  norm_num
+
+/-- The Alice-Bob mutual information is nonnegative. -/
+theorem aliceBobMutualInfo_nonneg (atk : CollectiveAttack E) (a : Basis) :
+    0 ≤ aliceBobMutualInfo atk a :=
+  holevoChi_nonneg (bobEnsemble atk a) uniform_bool_pos
+
+/-- Eve's Holevo information about Alice's bit is nonnegative. -/
+theorem eveHolevoInfo_nonneg (atk : CollectiveAttack E) (a : Basis) :
+    0 ≤ eveHolevoInfo atk a :=
+  holevoChi_nonneg (atk.eveEnsemble a) uniform_bool_pos
+
 /-! ### Security claim (target, not yet proved)
 
-The v1 security theorem we are building toward is:
+The full v1 security theorem we are building toward is:
 
 ```
 theorem keyRate_nonneg
