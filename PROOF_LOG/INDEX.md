@@ -44,3 +44,5 @@ Each entry below is one line: `[topic](file.md) — one-line hook`. Group by are
 ## Infrastructure / tooling
 
 - 🟢 [physlib-dependency](physlib-dependency.md) — PhysLib pinned at commit `c8fa2271`; `import QuantumInfo.Finite.Entropy.VonNeumann` works; gotchas: `lake update` (no args, not `lake update Physlib`) and **PhysLib has no `QuantumInfo` Lean namespace** — definitions are at root or under `MState`/`Qubit`/etc. 2026-05-08.
+- 🟢 `Information/PartialTraceInner.lean` — `⟪ρ, X ⊗ 1⟫ = ⟪ρ.traceRight, X⟫` and the symmetric form. Built on PhysLib's `Matrix.trace_mul_kron_one_right`. Good upstream candidate. 2026-05-08.
+- 🟢 `Information/QMutualInfoRelEnt.lean` — `qMutualInfo_eq_qRelativeEnt_marginals` (nonsingular version of PhysLib's sorry'd stub). Provable from partial-trace identities + `log_kron`. 2026-05-08.

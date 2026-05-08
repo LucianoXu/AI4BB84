@@ -133,37 +133,90 @@ All proofs go through `propext`, `Classical.choice`, `Quot.sound` only
   theorem; pursue only if the equality is needed for some downstream
   cleanup or an alternative Holevo-bound proof.
 
-## Still pending downstream
+## Holevo bound chain — partial progress (2026-05-08)
 
-* **The Holevo bound** `I_acc(X; ρ) ≤ χ(e)`: needed for the security
-  *interpretation* of the Devetak-Winter rate. The standard proof goes
-  via DPI on `cqState` plus a measurement channel `id_X ⊗ Λ`.
+The Holevo bound `I_acc(X; ρ) ≤ χ(e)` is needed for the security
+*interpretation* of the Devetak-Winter rate. Standard proof goes via
+DPI on `cqState` + measurement channel.
 
-  Attempted in 2026-05-08 session and **deferred** — the proof requires
-  three load-bearing pieces that are not currently in PhysLib:
+**Pieces 1 and 2 of 4 PROVED this session:**
 
-  1. **Partial-trace inner identities**:
-     `⟪ρ, X ⊗ 1⟫ = ⟪ρ.traceRight, X⟫` and the symmetric `1 ⊗ Y` form.
-     These contract a partial trace through a Hilbert–Schmidt inner.
-     PhysLib has `inner_one`, `one_inner`, `traceLeft_kron`,
-     `traceRight_kron`, but not the partial-trace contraction.
-     A first attempt at the proof ran into typeclass-resolution issues
-     with `Matrix.kroneckerMap` ↔ `HermitianMat.kronecker` indexing.
-  2. **`qMutualInfo_as_qRelativeEnt`**: `qMutualInfo ρ = D(ρ ‖ ρ_A ⊗ ρ_B)`.
-     Sorry in PhysLib (TODO upstream). Provable from #1 +
-     `HermitianMat.log_kron` + `qRelativeEnt_eq_neg_Sᵥₙ_add`, ~50 lines.
-  3. **Application of DPI** (PhysLib's `sandwichedRenyiEntropy_DPI_eq_one`)
-     specialized to the `id_X ⊗ Λ.measureDiscard` channel, plus
-     EReal/ℝ arithmetic to extract a real-valued bound.
+### ✅ 1. Partial-trace inner identities (`Information/PartialTraceInner.lean`)
 
-  Realistic estimate: 250–350 lines of Lean to wire all three together.
-  This is a **focused multi-session task**, not a single-session push.
+```lean
+theorem inner_kron_one_eq_inner_traceRight
+    (ρ : HermitianMat (α × d) ℂ) (X : HermitianMat α ℂ) :
+    ⟪ρ, X ⊗ₖ (1 : HermitianMat d ℂ)⟫ = ⟪ρ.traceRight, X⟫
 
-  Until the Holevo bound is proved, the `keyRate` is a well-defined
-  real number bounded by valid information quantities (`holevoChi_nonneg`,
-  `aliceBobMutualInfo_nonneg`, `eveHolevoInfo_nonneg` are all in place),
-  but it does not yet carry the security interpretation that Eve's
-  classical knowledge of Alice's bit is bounded by `eveHolevoInfo`.
+theorem inner_one_kron_eq_inner_traceLeft
+    (ρ : HermitianMat (α × d) ℂ) (Y : HermitianMat d ℂ) :
+    ⟪ρ, (1 : HermitianMat α ℂ) ⊗ₖ Y⟫ = ⟪ρ.traceLeft, Y⟫
+```
+
+Built via `inner_eq_re_trace` + PhysLib's `Matrix.trace_mul_kron_one_right`
+and `Matrix.trace_mul_one_kron_right` (both already proved in
+`ForMathlib/Matrix.lean`). Lifting from Matrix to HermitianMat is a
+straightforward `kronecker_mat`/`traceLeft_mat`/`traceRight_mat` rewrite.
+
+### ✅ 2. `qMutualInfo` as relative entropy (`Information/QMutualInfoRelEnt.lean`)
+
+```lean
+theorem qMutualInfo_eq_qRelativeEnt_marginals
+    (ρ : MState (dA × dB))
+    [hA : ρ.traceRight.M.NonSingular] [hB : ρ.traceLeft.M.NonSingular] :
+    qMutualInfo ρ = ((qRelativeEnt ρ (ρ.traceRight ⊗ᴹ ρ.traceLeft)).toReal : ℝ)
+```
+
+This is the "nonsingular" version of PhysLib's sorry'd `qMutualInfo_as_qRelativeEnt`.
+The proof chains `qRelativeEnt_ker` → `inner_sub_left` → `log_kron` →
+the partial-trace inner identities → `Sᵥₙ_eq_neg_trace_log`. Standard
+textbook calculation, ~30 lines once the partial-trace identities are
+in place.
+
+Both proofs go through `propext`, `Classical.choice`, `Quot.sound` only.
+
+### ⏭️ 3. **Joint entropy decomposition**
+
+`Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ ρᵢ`.
+
+This is **the still-missing piece** for the Holevo bound. The DPI route
+(applying `sandwichedRenyiEntropy_DPI_eq_one` to `id_X ⊗ measureDiscard`
+on `cqState e`) gives a bound on `qMutualInfo (cqState e)`, which we'd
+then need to convert to a bound on `holevoChi e`. That conversion
+is precisely the joint entropy decomposition (or its "≥" direction).
+
+The textbook proof of the decomposition requires reasoning about the
+**block-diagonal structure** of `(cqState e).M` and the operator-log
+of a block-diagonal matrix. PhysLib has `log_kron` for product states
+but not a direct `log_block_diagonal` lemma. Building one would
+involve characterizing the spectrum of a block-diagonal matrix and
+linking it to a sum of `negMulLog` evaluations across the blocks.
+
+### ⏭️ 4. **Application of DPI + assemble**
+
+Once #3 lands, this is a structured ~100-line argument: build the
+classicalized cqState, apply DPI for sandwiched Rényi at α=1, use
+`qMutualInfo_eq_qRelativeEnt_marginals` on both sides, and use the
+joint-entropy decomposition to convert `qMutualInfo` to `holevoChi`.
+
+## Status of Bar 1
+
+We have:
+* `holevoChi_nonneg` ✓
+* `aliceBobMutualInfo_nonneg`, `eveHolevoInfo_nonneg` ✓ (BB84-specific)
+* Partial-trace inner identities ✓ (this session)
+* `qMutualInfo_eq_qRelativeEnt_marginals` ✓ (this session, nonsingular version)
+* The Devetak-Winter rate is a well-defined real number bounded by
+  valid information quantities.
+
+We still need:
+* Joint entropy decomposition for the cqState
+* The Holevo bound itself (assembled from DPI + the decomposition)
+
+The Holevo bound is necessary for the *security interpretation* of the
+rate. Without it, `keyRate` is well-defined but doesn't yet carry the
+formal claim that Eve's classical knowledge of Alice's bit is bounded
+by `eveHolevoInfo`.
 
 ## References
 
