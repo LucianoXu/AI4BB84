@@ -54,28 +54,42 @@ For any POVM measurement `Λ` on the quantum register `B` of the cq-state, the r
 
 ## Status of the cq-state bridge
 
-`AI4BB84/Information/CQState.lean` (added 2026-05-08) supplies the **definition**:
+`AI4BB84/Information/CQState.lean` (added 2026-05-08) supplies:
 
 ```lean
-noncomputable def cqState (e : MEnsemble d α) : MState (α × d) :=
-  Ensemble.mix
-    (⟨fun i => (MState.pure (Ket.basis i)).prod (e.states i), e.distr⟩
-      : MEnsemble (α × d) α)
+noncomputable def cqState (e : MEnsemble d α) : MState (α × d)
+
+theorem cqState_traceLeft (e : MEnsemble d α) :
+    (cqState e).traceLeft = mix e
+
+theorem cqState_traceRight_m (e : MEnsemble d α) :
+    (cqState e).traceRight.m = ∑ i : α, (e.distr i : ℝ) • (MState.pure (Ket.basis i)).m
 ```
 
-A first attempt at `cqState_trivial` got stuck on a `Mixable.mkT` defeq deep inside PhysLib's `Ensemble.mix`. The theorem was dropped (no `sorry`); the definition stands on its own.
+**Both marginals are proved.** `cqState_traceLeft = mix e` is the full
+MState-level statement; `cqState_traceRight_m` is the matrix-level
+sum-of-projectors form. Both use only `propext`, `Classical.choice`,
+`Quot.sound` (no `sorryAx`).
+
+Two private helpers were added (PhysLib has these as TODOs):
+- `Matrix.traceLeft_finset_sum` and `Matrix.traceRight_finset_sum`
+- `Matrix.traceLeft_kron : (A ⊗ₖ B).traceLeft = A.trace • B`
+- `Matrix.traceRight_kron : (A ⊗ₖ B).traceRight = B.trace • A`
+
+These are good upstream candidates for PhysLib's `ForMathlib/Matrix.lean`.
+
+The full `cqState_traceRight = MState.ofClassical e.distr` (identifying the
+sum of basis projectors with the diagonal matrix) is the remaining algebraic
+step — a `Finset.sum_ite_eq` argument over `Ket.basis` entries. Not yet
+proved; not blocking the entropy decomposition (which can use the `_m` form).
 
 ## Next concrete tasks (recorded for the next session)
 
-1. **Marginal lemmas for `cqState`**:
-   - `(cqState e).traceLeft = mix e` (the B-marginal is the mixture)
-   - `(cqState e).traceRight = MState.ofClassical e.distr` (the X-marginal is classical, diagonal)
+1. **Finish the X-marginal**: `cqState_traceRight = MState.ofClassical e.distr` — entry-wise identification of `∑ᵢ pᵢ • |i⟩⟨i|` with `diagonal e.distr`. Should be a focused `ext + Finset.sum_ite_eq` lemma. Optional for the next step: the `_m` form is sufficient for entropy reasoning.
 
-   These will require unfolding `Ensemble.mix` — i.e., facing the `Mixable.mkT` defeq head-on. PhysLib's `mix_of` lemma (`Ensemble.lean:64`) gives the matrix expansion of `mix`; combine with `Matrix.traceLeft_kroneckerMap` / similar from Mathlib.
+2. **Joint entropy decomposition**: `Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ (ρᵢ)` (standard cq-state identity using block-diagonality). PhysLib has `Sᵥₙ_of_partial_eq` and the spectral-decomposition machinery; this proof is the substantial next entropy step.
 
-2. **Joint entropy decomposition**: `Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ (ρᵢ)` (a standard identity for cq-states using pinching / block-diagonality). PhysLib has `Sᵥₙ_of_partial_eq` and the spectral decomposition machinery to support this.
-
-3. Combining #1 and #2: `qMutualInfo (cqState e) = χ e` and from there `holevoChi_nonneg : 0 ≤ χ e := Sᵥₙ_subadditivity_for_cqState`.
+3. Combining #1/#2 with the proved marginals: `qMutualInfo (cqState e) = χ e` (the bridge), and immediately `holevoChi_nonneg : 0 ≤ χ e` via `Sᵥₙ_subadditivity` (PhysLib `SSA.lean:1203`).
 
 4. The Holevo bound `I_acc(X; ρ) ≤ χ(e)` via DPI on `cqState` plus a measurement channel.
 
