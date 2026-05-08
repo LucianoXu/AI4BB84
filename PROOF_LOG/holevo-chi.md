@@ -62,36 +62,45 @@ noncomputable def cqState (e : MEnsemble d α) : MState (α × d)
 theorem cqState_traceLeft (e : MEnsemble d α) :
     (cqState e).traceLeft = mix e
 
-theorem cqState_traceRight_m (e : MEnsemble d α) :
-    (cqState e).traceRight.m = ∑ i : α, (e.distr i : ℝ) • (MState.pure (Ket.basis i)).m
+theorem cqState_traceRight (e : MEnsemble d α) :
+    (cqState e).traceRight = MState.ofClassical e.distr
+
+@[simp] theorem Sᵥₙ_cqState_traceLeft (e : MEnsemble d α) :
+    Sᵥₙ (cqState e).traceLeft = Sᵥₙ (mix e)
+
+@[simp] theorem Sᵥₙ_cqState_traceRight (e : MEnsemble d α) :
+    Sᵥₙ (cqState e).traceRight = Hₛ e.distr
 ```
 
-**Both marginals are proved.** `cqState_traceLeft = mix e` is the full
-MState-level statement; `cqState_traceRight_m` is the matrix-level
-sum-of-projectors form. Both use only `propext`, `Classical.choice`,
-`Quot.sound` (no `sorryAx`).
+**Both marginals fully identified.** All proofs use only `propext`,
+`Classical.choice`, `Quot.sound` (no `sorryAx`, no `sorry`). The X-marginal
+identification with `MState.ofClassical e.distr` was done by an entry-wise
+calculation: pushing the (i, j) indexing through the sum, applying the
+`Ket.basis` formula to each term, and reducing via `Finset.sum_eq_single`
+on the diagonal vs `Finset.sum_eq_zero` off the diagonal.
 
-Two private helpers were added (PhysLib has these as TODOs):
-- `Matrix.traceLeft_finset_sum` and `Matrix.traceRight_finset_sum`
+The two `Sᵥₙ_cqState_*` corollaries are `@[simp]` and follow trivially —
+the right one uses PhysLib's `Sᵥₙ_ofClassical` (`Entanglement.lean:277`).
+
+Four private helpers were added (PhysLib has the first as an explicit TODO):
+- `Matrix.traceLeft_finset_sum`, `Matrix.traceRight_finset_sum`
 - `Matrix.traceLeft_kron : (A ⊗ₖ B).traceLeft = A.trace • B`
 - `Matrix.traceRight_kron : (A ⊗ₖ B).traceRight = B.trace • A`
+- Plus a `MState.pure_basis_apply` entry-wise lemma for basis projectors.
 
-These are good upstream candidates for PhysLib's `ForMathlib/Matrix.lean`.
-
-The full `cqState_traceRight = MState.ofClassical e.distr` (identifying the
-sum of basis projectors with the diagonal matrix) is the remaining algebraic
-step — a `Finset.sum_ite_eq` argument over `Ket.basis` entries. Not yet
-proved; not blocking the entropy decomposition (which can use the `_m` form).
+Good upstream candidates for PhysLib's `ForMathlib/Matrix.lean`.
 
 ## Next concrete tasks (recorded for the next session)
 
-1. **Finish the X-marginal**: `cqState_traceRight = MState.ofClassical e.distr` — entry-wise identification of `∑ᵢ pᵢ • |i⟩⟨i|` with `diagonal e.distr`. Should be a focused `ext + Finset.sum_ite_eq` lemma. Optional for the next step: the `_m` form is sufficient for entropy reasoning.
+1. **Joint entropy decomposition**: `Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ (ρᵢ)`. This is the substantial next entropy step. Standard proof uses block-diagonality of the cq-state's `M`: its eigenvalues are `pᵢ · spectrum(ρᵢ)` (across `i`), so
+   `Sᵥₙ(cqState e) = -∑ᵢ ∑_λ pᵢ λ log(pᵢ λ) = -∑ᵢ pᵢ log pᵢ - ∑ᵢ pᵢ ∑_λ λ log λ = Hₛ(e.distr) + ∑ᵢ pᵢ Sᵥₙ(ρᵢ)`.
+   Will need PhysLib's `MState.spectrum` API and possibly a pinching argument to relate the cq-state's spectrum to the components'. Not yet started.
 
-2. **Joint entropy decomposition**: `Sᵥₙ (cqState e) = Hₛ e.distr + Σᵢ pᵢ Sᵥₙ (ρᵢ)` (standard cq-state identity using block-diagonality). PhysLib has `Sᵥₙ_of_partial_eq` and the spectral-decomposition machinery; this proof is the substantial next entropy step.
+2. From #1 plus the marginal-entropy corollaries already proved:
+   `qMutualInfo (cqState e) = χ e` (the bridge identity), and immediately
+   `holevoChi_nonneg : 0 ≤ χ e` via `Sᵥₙ_subadditivity` (PhysLib `SSA.lean:1203`).
 
-3. Combining #1/#2 with the proved marginals: `qMutualInfo (cqState e) = χ e` (the bridge), and immediately `holevoChi_nonneg : 0 ≤ χ e` via `Sᵥₙ_subadditivity` (PhysLib `SSA.lean:1203`).
-
-4. The Holevo bound `I_acc(X; ρ) ≤ χ(e)` via DPI on `cqState` plus a measurement channel.
+3. The Holevo bound `I_acc(X; ρ) ≤ χ(e)` via DPI on `cqState` plus a measurement channel `id_X ⊗ Λ`.
 
 None of these are required to start on the BB84 protocol model itself, which proceeds independently.
 

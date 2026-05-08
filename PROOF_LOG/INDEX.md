@@ -24,7 +24,7 @@ Each entry below is one line: `[topic](file.md) — one-line hook`. Group by are
 
 ## Modeling
 
-- 🟢 [holevo-chi](holevo-chi.md) — `χ(e)` defined; `cqState : MEnsemble d α → MState (α × d)` defined; **both marginals proved** (`cqState_traceLeft = mix e`, `cqState_traceRight_m`); next: joint-entropy decomposition + nonnegativity + Holevo bound. 2026-05-08.
+- 🟢 [holevo-chi](holevo-chi.md) — `χ(e)` defined; `cqState : MEnsemble d α → MState (α × d)` defined; **both marginals fully proved** (`cqState_traceLeft = mix e`, `cqState_traceRight = MState.ofClassical e.distr`); marginal-entropy corollaries `Sᵥₙ_cqState_traceLeft/Right`. Next: joint-entropy decomposition → nonnegativity → Holevo bound. 2026-05-08.
 - 🟢 [protocol-skeleton](protocol-skeleton.md) — `Basis` (Z/X inductive), `prepare : Basis → Bool → MState Qubit`, sifting predicate. Measure module deferred. 2026-05-08.
 
 ## Correctness proofs

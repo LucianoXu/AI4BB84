@@ -1,4 +1,5 @@
 import QuantumInfo.Finite.Ensemble
+import QuantumInfo.Finite.Entanglement
 import AI4BB84.Information.Holevo
 
 /-!
@@ -140,12 +141,58 @@ theorem cqState_traceRight_m (e : MEnsemble d α) :
       (MState.pure (Ket.basis i)).m
   rw [Matrix.traceRight_kron, MState.tr', one_smul]
 
-/- The full identification `(cqState e).traceRight = MState.ofClassical e.distr`
-follows from `cqState_traceRight_m` by recognizing `∑ᵢ pᵢ • |i⟩⟨i|` as
-`diagonal (e.distr ·)`. The proof is an entry-wise calculation requiring
-careful unfolding of `Ket.basis` and `HermitianMat.diagonal`; tracked as
-a focused TODO. The `_m` form above is sufficient for downstream entropy
-work via `Sᵥₙ_ofClassical` (PhysLib `Entanglement.lean:277`) once we have
-the bridge. -/
+/-- Entry-wise: a basis projector `|k⟩⟨k|` has `(i, j)` entry `1` exactly
+when `k = i = j`, else `0`. -/
+private theorem MState.pure_basis_apply (k i j : α) :
+    (MState.pure (Ket.basis k : Ket α)).m i j =
+      if k = i ∧ k = j then 1 else 0 := by
+  rw [MState.pure_apply]
+  simp only [Ket.basis, Ket.coe_fun_eq, RCLike.star_def]
+  rcases eq_or_ne k i with rfl | hi
+  · rcases eq_or_ne k j with rfl | hj
+    · simp
+    · simp [hj]
+  · simp [hi]
+
+/-- The X-marginal of the cq-state is the classical embedding of `e.distr`. -/
+theorem cqState_traceRight (e : MEnsemble d α) :
+    (cqState e).traceRight = MState.ofClassical e.distr := by
+  apply MState.m_inj
+  rw [cqState_traceRight_m]
+  change _ = (MState.ofClassical e.distr).M.mat
+  rw [MState.coe_ofClassical, HermitianMat.diagonal_mat]
+  ext i j
+  -- LHS: (∑ k, (e.distr k : ℝ) • (pure (basis k)).m) i j
+  -- RHS: (Matrix.diagonal (e.distr ·) : Matrix α α ℂ) i j
+  -- Push indexing through the sum and the smul; apply basis-projector formula.
+  simp only [Matrix.sum_apply, Matrix.smul_apply,
+             MState.pure_basis_apply, smul_eq_mul, mul_ite, mul_one, mul_zero,
+             Matrix.diagonal_apply]
+  -- Goal: ∑ k, (if k = i ∧ k = j then ↑(e.distr k) else 0) = if i = j then ↑(e.distr i) else 0
+  by_cases hij : i = j
+  · subst hij
+    rw [if_pos rfl, Finset.sum_eq_single i]
+    · simp
+    · intros k _ hk
+      simp [hk]
+    · intro h; exact absurd (Finset.mem_univ i) h
+  · rw [if_neg hij, Finset.sum_eq_zero]
+    intros k _
+    by_cases hki : k = i
+    · subst hki; simp [hij]
+    · simp [hki]
+
+/-! ### Marginal entropies of the cq-state -/
+
+/-- The von Neumann entropy of the B-marginal equals that of the mixture. -/
+@[simp] theorem Sᵥₙ_cqState_traceLeft (e : MEnsemble d α) :
+    Sᵥₙ (cqState e).traceLeft = Sᵥₙ (mix e) := by
+  rw [cqState_traceLeft]
+
+/-- The von Neumann entropy of the X-marginal equals the Shannon entropy of the
+ensemble's index distribution. -/
+@[simp] theorem Sᵥₙ_cqState_traceRight (e : MEnsemble d α) :
+    Sᵥₙ (cqState e).traceRight = Hₛ e.distr := by
+  rw [cqState_traceRight, Sᵥₙ_ofClassical]
 
 end AI4BB84
