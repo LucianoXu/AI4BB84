@@ -133,13 +133,67 @@ All proofs go through `propext`, `Classical.choice`, `Quot.sound` only
   theorem; pursue only if the equality is needed for some downstream
   cleanup or an alternative Holevo-bound proof.
 
-## Holevo bound chain — partial progress (2026-05-08)
+## ✅ Holevo bound — FULLY PROVED (2026-05-08)
 
-The Holevo bound `I_acc(X; ρ) ≤ χ(e)` is needed for the security
-*interpretation* of the Devetak-Winter rate. Standard proof goes via
-DPI on `cqState` + measurement channel.
+**Bar 1 reached.** The Holevo bound `χ_classical ≤ χ_quantum` for any
+POVM measurement is proved, with all proofs clean (only `propext`,
+`Classical.choice`, `Quot.sound` axioms; no `sorry`, no `axiom`).
 
-**Pieces 1 and 2 of 4 PROVED this session:**
+The breakthrough: **a strategic pivot** away from the obvious-but-deep
+joint-entropy-decomposition route to a direct Klein-style argument
+that bypasses the cq-state entirely.
+
+### The pivot
+
+Instead of computing `Sᵥₙ(cqState e) = Hₛ + Σᵢ pᵢ Sᵥₙ(ρᵢ)` (the joint
+entropy decomposition, which would require log-of-block-diagonal
+infrastructure not in PhysLib), we used:
+
+  **`χ(e) = Σᵢ pᵢ · D(ρᵢ ‖ mix e)`**
+
+This "average relative entropy" identity is provable using only what
+we already had — `klein_real`-style chain reasoning, `mix_M_eq_sum`,
+`Sᵥₙ_eq_neg_trace_log`, and `inner_finset_sum_left`. From there, the
+Holevo bound is immediate: applying DPI per component (PhysLib's
+`sandwichedRenyiEntropy_DPI_eq_one`) and summing with weights `pᵢ`.
+
+### Proved theorems (in `Information/HolevoBound.lean`)
+
+```lean
+theorem holevoChi_eq_sum_qRelativeEnt
+    (e : MEnsemble d α) (h_pos : ∀ i, 0 < (e.distr i : ℝ)) :
+    holevoChi e =
+      ∑ i : α, (e.distr i : ℝ) * (qRelativeEnt (e.states i) (mix e)).toReal
+
+theorem holevoBound_per_component
+    (e : MEnsemble d α) (Λ : POVM Y d) (i : α) (h_pos : 0 < (e.distr i : ℝ)) :
+    (qRelativeEnt (MState.ofClassical (Λ.measure (e.states i)))
+                   (MState.ofClassical (Λ.measure (mix e)))).toReal ≤
+    (qRelativeEnt (e.states i) (mix e)).toReal
+
+theorem holevoBound
+    (e : MEnsemble d α) (Λ : POVM Y d) (h_pos : ∀ i, 0 < (e.distr i : ℝ)) :
+    ∑ i : α, (e.distr i : ℝ) *
+        (qRelativeEnt (MState.ofClassical (Λ.measure (e.states i)))
+                       (MState.ofClassical (Λ.measure (mix e)))).toReal
+      ≤ holevoChi e
+```
+
+The last is the headline: Eve's classical mutual information from any
+measurement on `E` is bounded by `holevoChi (eveEnsemble) = eveHolevoInfo`.
+
+### Pieces 1, 2, 3, 4 status
+
+* ✅ **Piece 1**: Partial-trace inner identities — `Information/PartialTraceInner.lean`.
+* ✅ **Piece 2**: `qMutualInfo` as relative entropy — `Information/QMutualInfoRelEnt.lean`.
+  *(Not actually used in the final proof! The pivot avoided needing it.)*
+* ⏭️ **Piece 3** (joint entropy decomposition): **bypassed**, not needed.
+* ✅ **Piece 4** (DPI assembly): done as `holevoBound_per_component` + `holevoBound`.
+
+**Pieces 1 and 2 from earlier this session were proved in good faith
+but turned out to not be on the critical path. They remain useful upstream
+candidates for PhysLib (`qMutualInfo_eq_qRelativeEnt_marginals` is the
+local nonsingular version of PhysLib's sorry'd stub).**
 
 ### ✅ 1. Partial-trace inner identities (`Information/PartialTraceInner.lean`)
 

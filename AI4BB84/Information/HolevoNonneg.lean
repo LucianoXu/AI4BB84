@@ -50,7 +50,7 @@ conversion of `qRelativeEnt` (an `ENNReal`) and chained linearity of
 
 /-- The mixture's HermitianMat is the convex combination of components'
 HermitianMats. Lifts the matrix-level `Ensemble.mix_of` to HermitianMat. -/
-private theorem mix_M_eq_sum (e : MEnsemble d α) :
+theorem mix_M_eq_sum (e : MEnsemble d α) :
     (mix e).M = ∑ i : α, (e.distr i : ℝ) • (e.states i).M := by
   apply HermitianMat.ext
   rw [HermitianMat.mat_finset_sum]
@@ -70,7 +70,7 @@ private theorem smul_states_le_mix (e : MEnsemble d α) (i : α) :
   exact Finset.single_le_sum hnn (Finset.mem_univ i)
 
 /-- Helper: when `pᵢ > 0`, the mixture's kernel is contained in `ρᵢ`'s kernel. -/
-private theorem mix_ker_le_states_ker (e : MEnsemble d α)
+theorem mix_ker_le_states_ker (e : MEnsemble d α)
     (i : α) (h : 0 < (e.distr i : ℝ)) :
     (mix e).M.ker ≤ (e.states i).M.ker := by
   have hpi_smul_le := smul_states_le_mix e i
@@ -115,7 +115,7 @@ private theorem klein_real (ρ σ : MState d) (h : σ.M.ker ≤ ρ.M.ker) :
 /-! ### Finset linearity helper for the inner product -/
 
 /-- Finset-sum form of the inner product's linearity in the first argument. -/
-private theorem inner_finset_sum_left
+theorem inner_finset_sum_left
     (s : Finset α) (f : α → HermitianMat d ℂ) (B : HermitianMat d ℂ) :
     ⟪∑ i ∈ s, f i, B⟫ = ∑ i ∈ s, ⟪f i, B⟫ := by
   induction s using Finset.induction_on with
