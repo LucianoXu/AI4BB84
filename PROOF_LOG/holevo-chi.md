@@ -135,14 +135,35 @@ All proofs go through `propext`, `Classical.choice`, `Quot.sound` only
 
 ## Still pending downstream
 
-* **The Holevo bound** `I_acc(X; ρ) ≤ χ(e)`: needed for `keyRate_nonneg`
-  to bridge from `0 ≤ aliceBobMutualInfo` and `0 ≤ eveHolevoInfo` (both
-  proved as corollaries) to `eveHolevoInfo ≤ aliceBobMutualInfo`. The
-  standard proof goes via DPI on `cqState` plus a measurement channel
-  `id_X ⊗ Λ`. PhysLib has DPI for sandwiched Renyi at α=1
-  (= quantum relative entropy) — but `qMutualInfo_as_qRelativeEnt` is
-  `sorry` in PhysLib (TODO upstream), so the existing PhysLib API can't
-  yet hand us DPI for `qMutualInfo` as a one-liner.
+* **The Holevo bound** `I_acc(X; ρ) ≤ χ(e)`: needed for the security
+  *interpretation* of the Devetak-Winter rate. The standard proof goes
+  via DPI on `cqState` plus a measurement channel `id_X ⊗ Λ`.
+
+  Attempted in 2026-05-08 session and **deferred** — the proof requires
+  three load-bearing pieces that are not currently in PhysLib:
+
+  1. **Partial-trace inner identities**:
+     `⟪ρ, X ⊗ 1⟫ = ⟪ρ.traceRight, X⟫` and the symmetric `1 ⊗ Y` form.
+     These contract a partial trace through a Hilbert–Schmidt inner.
+     PhysLib has `inner_one`, `one_inner`, `traceLeft_kron`,
+     `traceRight_kron`, but not the partial-trace contraction.
+     A first attempt at the proof ran into typeclass-resolution issues
+     with `Matrix.kroneckerMap` ↔ `HermitianMat.kronecker` indexing.
+  2. **`qMutualInfo_as_qRelativeEnt`**: `qMutualInfo ρ = D(ρ ‖ ρ_A ⊗ ρ_B)`.
+     Sorry in PhysLib (TODO upstream). Provable from #1 +
+     `HermitianMat.log_kron` + `qRelativeEnt_eq_neg_Sᵥₙ_add`, ~50 lines.
+  3. **Application of DPI** (PhysLib's `sandwichedRenyiEntropy_DPI_eq_one`)
+     specialized to the `id_X ⊗ Λ.measureDiscard` channel, plus
+     EReal/ℝ arithmetic to extract a real-valued bound.
+
+  Realistic estimate: 250–350 lines of Lean to wire all three together.
+  This is a **focused multi-session task**, not a single-session push.
+
+  Until the Holevo bound is proved, the `keyRate` is a well-defined
+  real number bounded by valid information quantities (`holevoChi_nonneg`,
+  `aliceBobMutualInfo_nonneg`, `eveHolevoInfo_nonneg` are all in place),
+  but it does not yet carry the security interpretation that Eve's
+  classical knowledge of Alice's bit is bounded by `eveHolevoInfo`.
 
 ## References
 
