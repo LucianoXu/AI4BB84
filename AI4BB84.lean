@@ -4,4 +4,6 @@ import AI4BB84.Information.CQState
 import AI4BB84.Protocol.Basis
 import AI4BB84.Protocol.Prepare
 import AI4BB84.Protocol.Sift
+import AI4BB84.Protocol.Measure
 import AI4BB84.Adversary.Collective
+import AI4BB84.Security.DevetakWinter

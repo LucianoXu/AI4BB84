@@ -26,7 +26,12 @@ Each entry below is one line: `[topic](file.md) — one-line hook`. Group by are
 
 - 🟢 [holevo-chi](holevo-chi.md) — `χ(e)` defined; `cqState : MEnsemble d α → MState (α × d)` defined; **both marginals fully proved** (`cqState_traceLeft = mix e`, `cqState_traceRight = MState.ofClassical e.distr`); marginal-entropy corollaries `Sᵥₙ_cqState_traceLeft/Right`. Next: joint-entropy decomposition → nonnegativity → Holevo bound. 2026-05-08.
 - 🟢 [protocol-skeleton](protocol-skeleton.md) — `Basis` (Z/X inductive), `prepare : Basis → Bool → MState Qubit`, sifting predicate. Measure module deferred. 2026-05-08.
-- 🟢 `CollectiveAttack` — `AI4BB84/Adversary/Collective.lean`: `structure CollectiveAttack (E : Type*) [...]` wrapping a per-pulse `CPTPMap Qubit (Qubit × E)`; `attackedState` composes Alice's preparation with Eve's channel. Sanity-baseline `trivial` attack deferred (needs PhysLib's `prep ∘ append` Stinespring pattern). 2026-05-08.
+- 🟢 `CollectiveAttack` — `AI4BB84/Adversary/Collective.lean`: `structure CollectiveAttack (E : Type*) [...]` wrapping a per-pulse `CPTPMap Qubit (Qubit × E)`; `attackedState`, `eveStateGivenBit`, `eveEnsemble : MEnsemble E Bool` (uniform over Alice's bit). Sanity-baseline `trivial` attack deferred. 2026-05-08.
+- 🟢 `Measure` — `AI4BB84/Protocol/Measure.lean`: `computationalProjector i = |i⟩⟨i|` (HermitianMat), `sum_computationalProjector : ∑ k, |k⟩⟨k| = 1` proved by entry-wise calculation, `measureZ : POVM (Fin 2) Qubit`. X-basis POVM (via Hadamard conjugation) deferred. 2026-05-08.
+
+## Security
+
+- 🟢 [security/devetak-winter](../AI4BB84/Security/DevetakWinter.lean) (no PROOF_LOG entry yet) — `bobClassicalState`, `bobEnsemble`, `aliceBobMutualInfo := holevoChi (bobEnsemble atk a)`, `eveHolevoInfo := holevoChi (atk.eveEnsemble a)`, `keyRate atk a := aliceBobMutualInfo − eveHolevoInfo`. **`keyRate_nonneg` (the security claim) stated as a target, not yet proved** — depends on the joint-entropy decomposition. 2026-05-08.
 
 ## Correctness proofs
 
