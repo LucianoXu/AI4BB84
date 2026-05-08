@@ -26,6 +26,7 @@ Each entry below is one line: `[topic](file.md) — one-line hook`. Group by are
 
 - 🟢 [holevo-chi](holevo-chi.md) — `χ(e)` defined; `cqState : MEnsemble d α → MState (α × d)` defined; **both marginals fully proved** (`cqState_traceLeft = mix e`, `cqState_traceRight = MState.ofClassical e.distr`); marginal-entropy corollaries `Sᵥₙ_cqState_traceLeft/Right`. Next: joint-entropy decomposition → nonnegativity → Holevo bound. 2026-05-08.
 - 🟢 [protocol-skeleton](protocol-skeleton.md) — `Basis` (Z/X inductive), `prepare : Basis → Bool → MState Qubit`, sifting predicate. Measure module deferred. 2026-05-08.
+- 🟢 `CollectiveAttack` — `AI4BB84/Adversary/Collective.lean`: `structure CollectiveAttack (E : Type*) [...]` wrapping a per-pulse `CPTPMap Qubit (Qubit × E)`; `attackedState` composes Alice's preparation with Eve's channel. Sanity-baseline `trivial` attack deferred (needs PhysLib's `prep ∘ append` Stinespring pattern). 2026-05-08.
 
 ## Correctness proofs
 
