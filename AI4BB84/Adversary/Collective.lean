@@ -1,5 +1,6 @@
 import QuantumInfo.Finite.Qubit.Basic
 import QuantumInfo.Finite.CPTPMap
+import QuantumInfo.Finite.Ensemble
 import AI4BB84.Protocol.Prepare
 
 /-!
@@ -56,6 +57,24 @@ be a useful sanity-check baseline (under it, Eve's side-information should
 be uncorrelated with Alice's bit). Constructing it requires PhysLib's
 `prep ∘ append` Stinespring pattern (see `QuantumInfo/Finite/CPTPMap/CPTP.lean`)
 and is left as a follow-up; not load-bearing for the security theorem. -/
+
+/-! ### Eve's per-round side-information
+
+For a fixed basis `a`, Alice's bit is uniformly random; Eve's reduced state
+on her register `E` therefore comes from an ensemble indexed by `Bool`. We
+package this for direct use with `holevoChi` — the asymptotic key rate
+`r ≥ I(A;B) − χ(A;E)` evaluates `χ` on this very ensemble. -/
+
+/-- Eve's reduced quantum state given Alice's basis `a` and bit `b`. -/
+noncomputable def eveStateGivenBit (atk : CollectiveAttack E)
+    (a : Basis) (b : Bool) : MState E :=
+  (atk.attackedState a b).traceLeft
+
+/-- Eve's per-round ensemble (uniform over Alice's bit), at fixed basis `a`. -/
+noncomputable def eveEnsemble (atk : CollectiveAttack E) (a : Basis) :
+    MEnsemble E Bool where
+  var := atk.eveStateGivenBit a
+  distr := ProbDistribution.uniform
 
 end CollectiveAttack
 
