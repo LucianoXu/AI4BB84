@@ -14,5 +14,10 @@ name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.29.1"
 
+[[require]]
+name = "Physlib"
+git = "https://github.com/leanprover-community/physlib.git"
+rev = "c8fa2271"
+
 [[lean_lib]]
 name = "AI4BB84"
