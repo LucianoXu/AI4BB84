@@ -21,12 +21,19 @@ expressible as `holevoChi` of an appropriate ensemble:
   * `χ(A; E) = holevoChi (atk.eveEnsemble a)` — Eve holds quantum
     side-information.
 
-This module defines the **rate value** `keyRate`. Its **lower-bound**
-character (the security claim `0 ≤ keyRate`, equivalently
-`χ(A; E) ≤ I(A; B)`) is what Devetak–Winter establishes; the proof
-depends on `holevoChi_nonneg` (joint-entropy decomposition, in flight)
-plus the data-processing inequality. Stated here as a future theorem;
-not yet proved.
+This module defines the **rate value** `keyRate`. Whether `0 ≤ keyRate`
+holds for a given `(atk, a)` is **not** a universal information-theoretic
+inequality and is **not** what `holevoBound` (already proved) establishes.
+A measure-Z-resend-`|+⟩` collective attack gives `χ(A; E) = 1` and
+`I(A; B) = 0`, hence `keyRate = -1` for that attack. BB84 rejects such
+attacks via *parameter estimation* (high QBER ⇒ abort), a step our
+current `CollectiveAttack` model does not represent.
+
+The Devetak–Winter theorem is *operational*: a one-way LOCC key-distillation
+protocol achieving rate `I(A; B) - χ(A; E)` exists when that quantity is
+positive, with security against collective attacks verified by the
+parameter-estimation step. Mechanizing this is the Bar-2 sprint — see
+`PROOF_LOG/parameter-estimation.md`.
 
 See `PROOF_LOG/proof-framework.md` for context.
 -/
@@ -88,30 +95,30 @@ theorem eveHolevoInfo_nonneg (atk : CollectiveAttack E) (a : Basis) :
     0 ≤ eveHolevoInfo atk a :=
   holevoChi_nonneg (atk.eveEnsemble a) uniform_bool_pos
 
-/-! ### Security claim (target, not yet proved)
+/-! ### Conditional positivity (placeholder — NOT a security theorem)
 
-The full v1 security theorem we are building toward is:
+The universal statement `∀ atk a, 0 ≤ keyRate atk a` is **false**: a
+measure-Z-resend-`|+⟩` collective attack gives `χ(A; E) = 1` and
+`I(A; B) = 0`, hence `keyRate = -1`. BB84 rejects such attacks at
+parameter estimation, but our current model does not encode that step.
+The path from `0 ≤ keyRate` to a real security claim is the Bar-2
+sprint described in `PROOF_LOG/parameter-estimation.md`:
 
-```
-theorem keyRate_nonneg
-    (atk : CollectiveAttack E) (a : Basis) :
-    0 ≤ keyRate atk a
-```
+1. Add a `QBER : CollectiveAttack E → Basis → ℝ` observable.
+2. Restrict to symmetric / parameter-estimation-passing attacks.
+3. Prove `χ(A; E) ≤ h(QBER)` for those (binary-entropy bound).
+4. Prove `I(A; B) = 1 - h(QBER)` (classical channel capacity).
+5. Conclude `keyRate ≥ 1 - 2 h(QBER)`, positive when QBER < ~11%.
 
-Its proof is the Devetak–Winter inequality `χ(A; E) ≤ I(A; B)` applied
-in the BB84 setting. The chain of dependencies (recorded in
-`PROOF_LOG/holevo-chi.md` and `PROOF_LOG/proof-framework.md`):
+The `linarith`-trivial conditional below promotes a (hypothetically
+obtained) entropic ordering to the typed predicate `0 ≤ keyRate atk a`
+for downstream code; it is **not** itself a security claim. -/
 
-1. Joint entropy decomposition `Sᵥₙ (cqState e) = Hₛ e.distr + ∑ᵢ pᵢ Sᵥₙ ρᵢ`.
-2. From #1 + already-proved cq-state marginals → `holevoChi_nonneg`.
-3. The Holevo bound + DPI on a measurement channel → bound `χ(A; E) ≤ I(A; B)`
-   for any cq-source ensemble that has been processed by a quantum channel.
-4. Apply to the BB84 collective-attack setting to get `keyRate_nonneg`.
-
-Step 1 is the open piece. Step 3 needs the Holevo bound machinery. The
-present module supplies the *statement infrastructure* — `keyRate` is a
-real-valued definition that can be `#eval`-d/`#check`-d once concrete
-attack channels are plugged in.
--/
+theorem keyRate_nonneg_of_eve_le_bob
+    (atk : CollectiveAttack E) (a : Basis)
+    (h : eveHolevoInfo atk a ≤ aliceBobMutualInfo atk a) :
+    0 ≤ keyRate atk a := by
+  unfold keyRate
+  linarith
 
 end AI4BB84

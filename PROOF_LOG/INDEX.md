@@ -31,7 +31,8 @@ Each entry below is one line: `[topic](file.md) — one-line hook`. Group by are
 
 ## Security
 
-- 🟢 [security/devetak-winter](../AI4BB84/Security/DevetakWinter.lean) (no PROOF_LOG entry yet) — `bobClassicalState`, `bobEnsemble`, `aliceBobMutualInfo := holevoChi (bobEnsemble atk a)`, `eveHolevoInfo := holevoChi (atk.eveEnsemble a)`, `keyRate atk a := aliceBobMutualInfo − eveHolevoInfo`. **`aliceBobMutualInfo_nonneg` and `eveHolevoInfo_nonneg` PROVED** as direct corollaries of `holevoChi_nonneg`. `keyRate_nonneg` (the security claim — needs Holevo bound to upgrade `0 ≤ each` to `eveHolevoInfo ≤ aliceBobMutualInfo`) is still pending. 2026-05-08.
+- 🟢 [security/devetak-winter](../AI4BB84/Security/DevetakWinter.lean) (no PROOF_LOG entry yet) — `bobClassicalState`, `bobEnsemble`, `aliceBobMutualInfo := holevoChi (bobEnsemble atk a)`, `eveHolevoInfo := holevoChi (atk.eveEnsemble a)`, `keyRate atk a := aliceBobMutualInfo − eveHolevoInfo`. **`aliceBobMutualInfo_nonneg` and `eveHolevoInfo_nonneg` PROVED** as direct corollaries of `holevoChi_nonneg`. `keyRate_nonneg_of_eve_le_bob` (conditional, `linarith`) added as a typed placeholder — **not a security claim**; the universal `keyRate ≥ 0` is *false* in the current model (counterexample in file). 2026-05-09.
+- 🟡 [parameter-estimation](parameter-estimation.md) — **Bar 2 roadmap.** Why universal `keyRate_nonneg` fails (measure-Z-resend-`|+⟩` attack); the five subtasks needed to reach the standard symmetric-channel BB84 bound `keyRate ≥ 1 − 2 h(δ)`: `QBER` def, `SymmetricAttack` subclass, `χ(A;E) ≤ h(δ)`, `I(A;B) = 1 − h(δ)`, assemble. 2026-05-09.
 
 ## Correctness proofs
 
