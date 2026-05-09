@@ -1,6 +1,6 @@
 # Bar 2: parameter estimation + symmetric channel + entropic QBER bound
 
-**Status:** 🟡 open / scoped — nothing implemented yet, this entry is the roadmap
+**Status:** 🟡 in progress — subtask #1 (QBER) ✅ done; #2–#5 still ahead
 **Last updated:** 2026-05-09
 
 ## Context
@@ -44,24 +44,32 @@ is representable, then prove the standard symmetric-channel BB84 bound
 Each is its own PR-sized piece of work; subsequent entries should split off
 as they land.
 
-### 1. `QBER` observable
+### 1. `QBER` observable ✅ DONE (2026-05-09)
 
-Define
+`AI4BB84/Adversary/QBER.lean` (added 2026-05-09):
 
 ```lean
-noncomputable def QBER (atk : CollectiveAttack E) (a : Basis) : ℝ
+noncomputable def bobMistakeProb (atk : CollectiveAttack E)
+    (a : Basis) (b : Bool) : ℝ :=
+  ((measureZ.measure ((atk.attackedState a b).traceRight))
+    (bitIdx (!b)) : ℝ)
+
+noncomputable def QBER (atk : CollectiveAttack E) (a : Basis) : ℝ :=
+  (1 / 2 : ℝ) * ∑ b : Bool, atk.bobMistakeProb a b
+
+theorem QBER_nonneg (atk : CollectiveAttack E) (a : Basis) : 0 ≤ atk.QBER a
+theorem QBER_le_one  (atk : CollectiveAttack E) (a : Basis) : atk.QBER a ≤ 1
 ```
 
-as the probability (averaged over Alice's uniform bit and the resend channel)
-that Bob's Z-basis measurement disagrees with Alice's bit. Concretely, in
-basis `a`,
+Both bounds go through `propext`, `Classical.choice`, `Quot.sound` only —
+no `sorryAx`. The previously planned bound `≤ 1/2` is **not** the right
+universal bound: a "Eve always flips" attack achieves QBER = 1, the upper
+bound `1/2` only holds under the symmetry assumption introduced in #2.
 
-```
-QBER atk a := ∑ b, (1/2) * Pr[ measureZ ((atk.attackedState a b).traceRight) ≠ b ]
-```
-
-This is a function of the attack only and must be `≤ 1/2`. The technical
-content is computing the marginal-on-Bob probability under `MState.measure`.
+**Caveat carried forward.** Definition uses `measureZ` regardless of basis
+`a`, matching `bobClassicalState`'s convention. When `measureBasis : Basis →
+POVM` lands (deferred X-basis POVM in `PROOF_LOG/INDEX.md`), `bobMistakeProb`
+must switch in lockstep with the rest of the model.
 
 ### 2. Symmetric / passing-PE attack subclass
 
